@@ -3,18 +3,25 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 
-use jni::sys::{_jobject, jboolean, jint, jlong};
+use jni::sys::{_jobject, jlong};
 
 use aes_gcm_siv::Error as AesGcmSivError;
 use libsignal_protocol_rust::*;
+use std::convert::TryFrom;
 
-pub(crate) use jni::objects::JClass;
+pub(crate) use jni::objects::{JClass, JString};
 pub(crate) use jni::strings::JNIString;
-pub(crate) use jni::sys::{jbyteArray, jstring};
+pub(crate) use jni::sys::{jboolean, jbyteArray, jint, jstring};
 pub(crate) use jni::JNIEnv;
+
+#[macro_use]
+mod convert;
+pub(crate) use convert::*;
 
 mod error;
 pub use error::*;
+
+pub use crate::support::expect_ready;
 
 pub type ObjectHandle = jlong;
 
@@ -169,6 +176,20 @@ pub unsafe fn native_handle_cast<T>(
     }
 
     Ok(&mut *(handle as *mut T))
+}
+
+pub fn jint_to_u32(v: jint) -> Result<u32, SignalJniError> {
+    if v < 0 {
+        return Err(SignalJniError::IntegerOverflow(format!("{} to u32", v)));
+    }
+    Ok(v as u32)
+}
+
+pub fn jint_to_u8(v: jint) -> Result<u8, SignalJniError> {
+    match u8::try_from(v) {
+        Err(_) => Err(SignalJniError::IntegerOverflow(format!("{} to u8", v))),
+        Ok(v) => Ok(v),
+    }
 }
 
 pub fn to_jbytearray<T: AsRef<[u8]>>(
