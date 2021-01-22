@@ -19,9 +19,6 @@ Options:
 	-d -- debug build (default is release)
 	-v -- verbose build
 
-	--generate-ffi -- regenerate ffi headers
-	--verify-ffi   -- verify that ffi headers are up to date
-
 Use CARGO_BUILD_TARGET for cross-compilation (such as for iOS).
 END
 }
@@ -39,14 +36,17 @@ check_cbindgen() {
 
 
 RELEASE_BUILD=1
+CARGO_PROFILE_DIR=release
 VERBOSE=
-SHOULD_CBINDGEN=
-CBINDGEN_VERIFY=
 
 while [ "${1:-}" != "" ]; do
   case $1 in
     -d | --debug )
       RELEASE_BUILD=
+      CARGO_PROFILE_DIR=debug
+      ;;
+    -v | --verbose )
+      VERBOSE=1
       ;;
     -v | --verbose )
       VERBOSE=1
@@ -71,6 +71,19 @@ done
 
 check_rust
 
+check_cbindgen() {
+  if ! which cbindgen > /dev/null; then
+    echo 'error: cbindgen not found in PATH' >&2
+    if which cargo > /dev/null; then
+      echo 'note: get it by running' >&2
+      printf "\n\t%s\n\n" "cargo install cbindgen --vers '^0.16'" >&2
+    fi
+    exit 1
+  fi
+}
+
+check_cbindgen
+
 if [[ -n "${DEVELOPER_SDK_DIR:-}" ]]; then
   # Assume we're in Xcode, which means we're probably cross-compiling.
   # In this case, we need to add an extra library search path for build scripts and proc-macros,
@@ -79,25 +92,8 @@ if [[ -n "${DEVELOPER_SDK_DIR:-}" ]]; then
   export LIBRARY_PATH="${DEVELOPER_SDK_DIR}/MacOSX.sdk/usr/lib:${LIBRARY_PATH:-}"
 fi
 
-echo_then_run cargo build -p libsignal-ffi ${RELEASE_BUILD:+--release} ${VERBOSE:+--verbose}
-
-FFI_HEADER_PATH=swift/Sources/SignalFfi/signal_ffi.h
-
-if [[ -n "${SHOULD_CBINDGEN}" ]]; then
-  check_cbindgen
-  if [[ -n "${CBINDGEN_VERIFY}" ]]; then
-    echo diff -u "${FFI_HEADER_PATH}" "<(cbindgen -q ${RELEASE_BUILD:+--profile release} rust/bridge/ffi)"
-    if ! diff -u "${FFI_HEADER_PATH}"  <(cbindgen -q ${RELEASE_BUILD:+--profile release} rust/bridge/ffi); then
-      echo
-      echo 'error: signal_ffi.h not up to date; run' "$0" '--generate-ffi' >&2
-      exit 1
-    fi
-  else
-    echo cbindgen ${RELEASE_BUILD:+--profile release} -o "${FFI_HEADER_PATH}" rust/bridge/ffi
-    # Use sed to ignore irrelevant cbindgen warnings.
-    # ...and then disable the shellcheck warning about literal backticks in single-quotes
-    # shellcheck disable=SC2016
-    cbindgen ${RELEASE_BUILD:+--profile release} -o "${FFI_HEADER_PATH}" rust/bridge/ffi 2>&1 |
-      sed '/WARN: Missing `\[defines\]` entry for `feature = "ffi"` in cbindgen config\./ d' >&2
-  fi
-fi
+set -x
+cargo build -p libsignal-ffi ${RELEASE_BUILD:+--release} ${VERBOSE:+--verbose}
+cbindgen ${RELEASE_BUILD:+--profile release} \
+  -o "${CARGO_BUILD_TARGET_DIR:-target}/${CARGO_BUILD_TARGET:-}/${CARGO_PROFILE_DIR}"/signal_ffi.h \
+  rust/bridge/ffi
