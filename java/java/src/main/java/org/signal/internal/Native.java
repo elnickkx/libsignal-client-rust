@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2020 Signal Messenger, LLC.
+// Copyright (C) 2020-2021 Signal Messenger, LLC.
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 
@@ -86,7 +86,7 @@ public final class Native {
   public static native void ECPublicKey_Destroy(long handle);
   public static native byte[] ECPublicKey_GetPublicKeyBytes(long handle);
   public static native byte[] ECPublicKey_Serialize(long handle);
-  public static native boolean ECPublicKey_Verify(long handle, byte[] message, byte[] signature);
+  public static native boolean ECPublicKey_Verify(long key, byte[] message, byte[] signature);
 
   public static native byte[] GroupCipher_DecryptMessage(long senderKeyName, byte[] message, SenderKeyStore store);
   public static native byte[] GroupCipher_EncryptMessage(long senderKeyName, byte[] message, SenderKeyStore store);
@@ -96,6 +96,7 @@ public final class Native {
 
   public static native byte[] HKDF_DeriveSecrets(int version, byte[] inputKeyMaterial, byte[] salt, byte[] info, int outputLength);
 
+  public static native long[] IdentityKeyPair_Deserialize(byte[] data);
   public static native byte[] IdentityKeyPair_Serialize(long publicKeyHandle, long privateKeyHandle);
 
   public static native void NumericFingerprintGenerator_Destroy(long handle);
@@ -132,7 +133,7 @@ public final class Native {
   public static native byte[] PreKeySignalMessage_GetSignalMessage(long handle);
   public static native int PreKeySignalMessage_GetSignedPreKeyId(long handle);
   public static native int PreKeySignalMessage_GetVersion(long handle);
-  public static native long PreKeySignalMessage_New(int messageVersion, int registrationId, int preKeyId, int signedPreKeyId, long baseKeyHandle, long identityKeyHandle, long signalMessageHandle);
+  public static native long PreKeySignalMessage_New(int messageVersion, int registrationId, int preKeyId, int signedPreKeyId, long baseKey, long identityKey, long signalMessage);
 
   public static native void ProtocolAddress_Destroy(long handle);
   public static native int ProtocolAddress_DeviceId(long handle);
@@ -214,19 +215,12 @@ public final class Native {
   public static native byte[] SessionRecord_GetRemoteIdentityKeyPublic(long handle);
   public static native int SessionRecord_GetRemoteRegistrationId(long handle);
   public static native byte[] SessionRecord_GetSenderChainKeyValue(long handle);
-  public static native long SessionRecord_GetSessionState(long sessionRecord);
   public static native int SessionRecord_GetSessionVersion(long handle);
   public static native boolean SessionRecord_HasSenderChain(long handle);
   public static native long SessionRecord_InitializeAliceSession(long identityKeyPrivate, long identityKeyPublic, long basePrivate, long basePublic, long theirIdentityKey, long theirSignedPrekey, long theirRatchetKey);
   public static native long SessionRecord_InitializeBobSession(long identityKeyPrivate, long identityKeyPublic, long signedPrekeyPrivate, long signedPrekeyPublic, long ephPrivate, long ephPublic, long theirIdentityKey, long theirBaseKey);
   public static native long SessionRecord_NewFresh();
   public static native byte[] SessionRecord_Serialize(long handle);
-
-  public static native long SessionState_Deserialize(byte[] data);
-  public static native void SessionState_Destroy(long handle);
-  public static native int SessionState_GetSessionVersion(long handle);
-  public static native boolean SessionState_HasSenderChain(long handle);
-  public static native byte[] SessionState_Serialized(long handle);
 
   public static native long SignalMessage_Deserialize(byte[] data);
   public static native void SignalMessage_Destroy(long handle);
@@ -236,7 +230,7 @@ public final class Native {
   public static native byte[] SignalMessage_GetSenderRatchetKey(long handle);
   public static native byte[] SignalMessage_GetSerialized(long handle);
   public static native long SignalMessage_New(int messageVersion, byte[] macKey, long senderRatchetKey, int counter, int previousCounter, byte[] ciphertext, long senderIdentityKey, long receiverIdentityKey);
-  public static native boolean SignalMessage_VerifyMac(long handle, long senderIdentityKey, long receiverIdentityKey, byte[] macKey);
+  public static native boolean SignalMessage_VerifyMac(long msg, long senderIdentityKey, long receiverIdentityKey, byte[] macKey);
 
   public static native long SignedPreKeyRecord_Deserialize(byte[] data);
   public static native void SignedPreKeyRecord_Destroy(long handle);

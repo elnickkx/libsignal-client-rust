@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright 2020 Signal Messenger, LLC.
+# Copyright 2020-2021 Signal Messenger, LLC.
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 
@@ -23,6 +23,18 @@ Use CARGO_BUILD_TARGET for cross-compilation (such as for iOS).
 END
 }
 
+check_cbindgen() {
+  if ! which cbindgen > /dev/null; then
+    echo 'error: cbindgen not found in PATH' >&2
+    if which cargo > /dev/null; then
+      echo 'note: get it by running' >&2
+      printf "\n\t%s\n\n" "cargo install cbindgen --vers '^0.16'" >&2
+    fi
+    exit 1
+  fi
+}
+
+
 RELEASE_BUILD=1
 CARGO_PROFILE_DIR=release
 VERBOSE=
@@ -36,13 +48,23 @@ while [ "${1:-}" != "" ]; do
     -v | --verbose )
       VERBOSE=1
       ;;
+    -v | --verbose )
+      VERBOSE=1
+      ;;
+    --generate-ffi )
+      SHOULD_CBINDGEN=1
+      ;;
+    --verify-ffi )
+      SHOULD_CBINDGEN=1
+      CBINDGEN_VERIFY=1
+      ;;
     -h | --help )
       usage
       exit
       ;;
     * )
       usage
-      exit 1
+      exit 2
   esac
   shift
 done
