@@ -17,5 +17,5 @@ crate-type = ["cdylib"]
 [dependencies]
 libsignal-protocol-rust = { path = "../../protocol" }
 signal-neon-futures = { path = "futures" }
-neon = { version = "0.7.0", default-features = false, features = ["napi-1"] }
+neon = { version = "0.10.1", default-features = false, features = ["napi-1"] }
 rand = "0.7.3"
